@@ -42,6 +42,11 @@ contract StakingPool is IStakingPool, Ownable{
         _;
     }
 
+    modifier onlyIdOwner(uint _id) {
+        require(msg.sender == frensPoolShare.ownerOf(_id), "not the owner");
+        _;
+    }
+
     enum PoolState {
         awaitingValidatorInfo,
         acceptingDeposits,
@@ -50,12 +55,20 @@ contract StakingPool is IStakingPool, Ownable{
     }
     PoolState currentState;
 
+    struct RageQuit {
+        uint price;
+        uint time;
+    }
+
     mapping(uint => uint) public depositForId;
     mapping(uint => uint) public frenPastClaim;
-    mapping(uint => bool) public locked;
+    mapping(uint => bool) public locked; //transfer locked (must use ragequit)
+    mapping(uint => RageQuit) public rageQuitInfo;
 
     uint public totalDeposits;
     uint public totalClaims;
+    uint public poolMax;
+    uint public poolMin;
 
     uint[] public idsInPool;
 
@@ -75,12 +88,18 @@ contract StakingPool is IStakingPool, Ownable{
     constructor(
         address owner_,
         bool validatorLocked_,
+        bool frensLocked_,
+        uint poolMin_,
+        uint poolMax_,
         IFrensStorage frensStorage_
     ) {
         frensStorage = frensStorage_;
         artForPool = IFrensArt(frensStorage.getAddress(keccak256(abi.encodePacked("contract.address", "FrensArt"))));
         frensPoolShare = IFrensPoolShare(frensStorage.getAddress(keccak256(abi.encodePacked("contract.address", "FrensPoolShare"))));
         validatorLocked = validatorLocked_;
+        transferLocked = frensLocked_;
+        poolMin = poolMin_;
+        poolMax = poolMax_;
         if (validatorLocked) {
             currentState = PoolState.awaitingValidatorInfo;
         } else {
@@ -96,6 +115,8 @@ contract StakingPool is IStakingPool, Ownable{
         mustBeAccepting
         maxTotDep
     {
+        require(msg.value >= poolMin, "below minimum deposit for pool");
+        require(msg.value <= poolMax, "above maximum deposit for pool");
         uint id = frensPoolShare.totalSupply();
         depositForId[id] = msg.value;
         totalDeposits += msg.value;
@@ -108,10 +129,26 @@ contract StakingPool is IStakingPool, Ownable{
 
     function addToDeposit(uint _id) external payable mustBeAccepting maxTotDep correctPoolOnly(_id){
         require(frensPoolShare.exists(_id), "id does not exist"); //id must exist
-        
+        require(depositForId[_id] + msg.value <= poolMax, "above maximum deposit for pool");
         depositForId[_id] += msg.value;
         totalDeposits += msg.value;
     }
+
+    function withdraw(uint _id, uint _amount) external mustBeAccepting correctPoolOnly(_id) onlyIdOwner(_id){
+        require(depositForId[_id] >= poolMin + _amount, "invalid amount, withdraw less or use withdrawAll");
+        _withdraw(_id, _amount);
+    }
+
+    function withdrawAll(uint _id) external mustBeAccepting correctPoolOnly(_id) onlyIdOwner(_id){
+        _withdraw(_id, depositForId[_id]);
+    }
+
+    function _withdraw(uint _id, uint _amount) internal {
+        depositForId[_id] -= _amount;
+        totalDeposits -= _amount;
+        payable(frensPoolShare.ownerOf(_id)).transfer(_amount);
+    }
+
 
     function stake(
         bytes calldata _pubKey,
@@ -216,14 +253,7 @@ contract StakingPool is IStakingPool, Ownable{
        return result;
      }
  */
-    function withdraw(uint _id, uint _amount) external mustBeAccepting {
-        require(msg.sender == frensPoolShare.ownerOf(_id), "not the owner");
-        require(depositForId[_id] >= _amount, "not enough deposited");
-        depositForId[_id] -= _amount;
-        totalDeposits -= _amount;
-        payable(msg.sender).transfer(_amount);
-    }
-
+    
     function claim(uint _id) external correctPoolOnly(_id){
         require(
             currentState != PoolState.acceptingDeposits,
@@ -260,32 +290,46 @@ contract StakingPool is IStakingPool, Ownable{
         currentState = PoolState.exited;
     }
 
-    /* not ready for mainnet release
-  function rageQuit(uint id, uint price) public {
-    require(msg.sender == frensPoolShare.ownerOf(id), "not the owner");
-    uint deposit = getUint(keccak256(abi.encodePacked("deposit.amount", address(this), id)));
-    require(price <= deposit, "cannot set price higher than deposit");
-    frensPoolShare.
-    IFrensPoolSetter frensPoolSetter = IFrensPoolSetter(getAddress(keccak256(abi.encodePacked("contract.address", "FrensPoolSetter"))));
-    bool success = frensPoolSetter.rageQuit(id, price);
-    assert(success);
     
+  function rageQuit(uint _id, uint _price) public onlyIdOwner(_id) correctPoolOnly(_id){
+    uint deposit = depositForId[_id];
+    require(_price <= deposit, "cannot set price higher than deposit");
+    rageQuitInfo[_id].price = _price;
+    rageQuitInfo[_id].time =  block.timestamp;
+    //must set transfer approval to this contract
   }
-  //TODO:needs a purchase function for ragequit
-  function unlockTransfer(uint id) public {
-    uint time = getUint(keccak256(abi.encodePacked("rage.time", id))) + 1 weeks;
-    require(time >= block.timestamp);
-    IFrensPoolSetter frensPoolSetter = IFrensPoolSetter(getAddress(keccak256(abi.encodePacked("contract.address", "FrensPoolSetter"))));
-    bool success = frensPoolSetter.unlockTransfer(id);
-    assert(success);
+  
+  function buyOut(
+    uint rageQuitId, 
+    uint buyersTokenId
+    ) 
+    public
+    payable
+    onlyIdOwner(buyersTokenId) 
+    correctPoolOnly(buyersTokenId) 
+    correctPoolOnly(rageQuitId){
+        require(msg.value >= rageQuitInfo[rageQuitId].price, "must send correct value");
+        address rageOwner = frensPoolShare.ownerOf(rageQuitId);
+        payable(rageOwner).transfer(msg.value);
+        locked[rageQuitId] = false;
+        frensPoolShare.safeTransferFrom(
+            rageOwner,
+            msg.sender,
+            rageQuitId
+        );
+        locked[rageQuitId] = true;
+    }
+
+  function unlockTransfer(uint _id) public {
+    uint endTime = rageQuitInfo[_id].time + 1 weeks;
+    require(endTime <= block.timestamp, "allow one week before unlock");
+    locked[_id] = false;
   }
 
-  function burn(uint tokenId) public { //this is only here to test the burn method in frensPoolShare
-    address tokenOwner = frensPoolShare.ownerOf(tokenId);
-    require(msg.sender == tokenOwner);
+  function burn(uint tokenId) public onlyIdOwner(tokenId) { //this is only here to test the burn method in frensPoolShare
     frensPoolShare.burn(tokenId);
   }
-*/
+
     //getters
 
     function getIdsInThisPool() public view returns(uint[] memory) {

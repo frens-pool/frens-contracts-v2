@@ -397,7 +397,7 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
     });
   }
 
-  const newPool = await StakingPoolFactory.create("0xa53A6fE2d8Ad977aD926C485343Ba39f32D3A3F6", true/*, false, 0, 32000000000000000000n*/);
+  const newPool = await StakingPoolFactory.create("0xa53A6fE2d8Ad977aD926C485343Ba39f32D3A3F6", true, true, 0, 32000000000000000000n);
   
   newPoolResult = await newPool.wait();
   console.log('\x1b[36m%s\x1b[0m',"New StakingPool", newPoolResult.logs[0].address);
@@ -406,6 +406,8 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
     const setGuard = await FrensStorage.setGuardian("0x6B5F5497Dd1FaFfC62faf6dCFC0e7f616058De0b");
     await setGuard.wait();
     console.log('\x1b[36m%s\x1b[0m', "New guardian set", "0x6B5F5497Dd1FaFfC62faf6dCFC0e7f616058De0b");
+    FrensPoolShare.grantRole(ethers.constants.HashZero, "0x6B5F5497Dd1FaFfC62faf6dCFC0e7f616058De0b");
+    console.log('\x1b[31m%s\x1b[0m', "mainnet deployment: multisig must accept guardianship, and revoke 0x00 role from deployer");
   }
 /*
   await deploy("FrensArtTest", {

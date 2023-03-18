@@ -80,7 +80,7 @@ contract StakingPoolLockedTest is Test {
       //set contracts as deployed
      
       //create staking pool through proxy contract
-      (address pool) = stakingPoolFactory.create(contOwner, true/*, false, 0, 32000000000000000000*/);
+      (address pool) = stakingPoolFactory.create(contOwner, true, false, 0, 32000000000000000000);
       //connect to staking pool
       stakingPool = StakingPool(payable(pool));
       //console.log the pool address for fun  if(FrensPoolShareOld == 0){
@@ -177,7 +177,7 @@ contract StakingPoolLockedTest is Test {
         stakingPool.depositToPool{value: x}();
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
         assertTrue(id == 0, "first id is 0");
-        vm.expectRevert("not enough deposited");
+        vm.expectRevert("invalid amount, withdraw less or use withdrawAll");
         stakingPool.withdraw(id, y);
       }
     }

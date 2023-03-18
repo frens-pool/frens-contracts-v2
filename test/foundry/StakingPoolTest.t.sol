@@ -91,14 +91,14 @@ contract StakingPoolTest is Test {
       //set contracts as deployed
      
       //create staking pool through proxy contract
-      (address pool) = stakingPoolFactory.create(contOwner, false/*, false, 0, 32000000000000000000*/);
+      (address pool) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000);
       //connect to staking pool
       stakingPool = StakingPool(payable(pool));
       //console.log the pool address for fun  if(FrensPoolShareOld == 0){
       //console.log("pool", pool);
 
       //create a second staking pool through proxy contract
-      (address pool2) = stakingPoolFactory.create(contOwner, false/*, false, 0, 32000000000000000000*/);
+      (address pool2) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000);
       //connect to staking pool
       stakingPool2 = StakingPool(payable(pool2));
       //console.log the pool address for fun  if(FrensPoolShareOld == 0){
@@ -217,7 +217,7 @@ contract StakingPoolTest is Test {
         stakingPool.depositToPool{value: x}();
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
         assertTrue(id == 0, "first id is 0");
-        vm.expectRevert("not enough deposited");
+        vm.expectRevert("invalid amount, withdraw less or use withdrawAll");
         stakingPool.withdraw(id, y);
       }
     }
@@ -280,12 +280,7 @@ contract StakingPoolTest is Test {
         uint bobBalance = address(bob).balance;
         uint aliceShare = (address(stakingPool).balance) * aliceDeposit / 32000000000000000000;
         uint bobShare = (address(stakingPool).balance) - aliceShare;
-        //vm.prank(alice);
-        /*
-        uint frensClaimBalance = address(frensClaim).balance;
-        //to account for rounding errors max 2 wei (bc we subtract 1 wei in contract to avoid drawing negative)
-        assertApproxEqAbs(frensClaimBalance, bobShare, 2, "frensClaim balance pre-claim wrong");
-*/
+        
         if(aliceShare == 1) aliceShare = 0;
         if(bobShare == 1) bobShare =0;
         
@@ -474,5 +469,70 @@ function testFees(uint32 x, uint32 y) public {
       frensOracle.checkValidatorState(address(stakingPool));
       string memory state = stakingPool.getState();
       assertEq(keccak256(abi.encodePacked("exited")), keccak256(abi.encodePacked(state)),"not exited");
+    }
+
+    function testMinMax(uint72 x) public {
+      (address pool3) = stakingPoolFactory.create(contOwner, false, false, 2 ether, 4 ether);
+      StakingPool stakingPool3 = StakingPool(payable(pool3));
+      startHoax(alice);
+      if(x >= 2 ether && x <= 4 ether){
+        stakingPool3.depositToPool{value: x}();
+        uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
+        assertTrue(id == 0, "first id is 0");
+        uint depAmt = stakingPool3.depositForId(id);
+        assertEq(x, depAmt, "x = depAmt");
+        uint totDep = stakingPool3.totalDeposits();
+        assertEq(x, totDep, "x=totDep");
+        if(x >= 20000000000000000001){
+          vm.expectRevert("above maximum deposit for pool");
+          stakingPool3.addToDeposit{value: 2 ether}(id);
+        }
+      } else if(x == 0) {
+        vm.expectRevert("must deposit ether");
+        stakingPool3.depositToPool{value: x}();
+      } else if(x > 32 ether){
+        vm.expectRevert("total deposits cannot be more than 32 Eth");
+        stakingPool3.depositToPool{value: x}();
+      } else if(x > 4 ether) {
+        vm.expectRevert("above maximum deposit for pool");
+        stakingPool3.depositToPool{value: x}();
+      } else if(x < 2 ether) {
+        vm.expectRevert("below minimum deposit for pool");
+        stakingPool3.depositToPool{value: x}();
+      }
+    }
+
+    function testWithdrawAll(uint72 x) public {
+      (address pool3) = stakingPoolFactory.create(contOwner, false, false, 2 ether, 4 ether);
+      StakingPool stakingPool3 = StakingPool(payable(pool3));
+      startHoax(alice);
+      if(x >= 2 ether && x <= 4 ether){
+        stakingPool3.depositToPool{value: x}();
+        uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
+        assertTrue(id == 0, "first id is 0");
+        uint depAmt = stakingPool3.depositForId(id);
+        assertEq(x, depAmt, "x = depAmt");
+        uint totDep = stakingPool3.totalDeposits();
+        assertEq(x, totDep, "x=totDep");
+        if(x >= 20000000000000000001){
+          vm.expectRevert("invalid amount, withdraw less or use withdrawAll");
+          stakingPool3.withdraw(id, 2000000000000000001);
+        }
+        uint aliceBalance = alice.balance;
+        stakingPool3.withdrawAll(id);
+        assertEq(aliceBalance + x, alice.balance, "alice balance mismatch");
+      } else if(x == 0) {
+        vm.expectRevert("must deposit ether");
+        stakingPool3.depositToPool{value: x}();
+      } else if(x > 32 ether){
+        vm.expectRevert("total deposits cannot be more than 32 Eth");
+        stakingPool3.depositToPool{value: x}();
+      } else if(x > 4 ether) {
+        vm.expectRevert("above maximum deposit for pool");
+        stakingPool3.depositToPool{value: x}();
+      } else if(x < 2 ether) {
+        vm.expectRevert("below minimum deposit for pool");
+        stakingPool3.depositToPool{value: x}();
+      }
     }
 }

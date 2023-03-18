@@ -89,14 +89,14 @@ contract MiscTest is Test {
       //set contracts as deployed
      
       //create staking pool through proxy contract
-      (address pool) = stakingPoolFactory.create(contOwner, false/*, false, 0, 32000000000000000000*/);
+      (address pool) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000);
       //connect to staking pool
       stakingPool = StakingPool(payable(pool));
       //console.log the pool address for fun  if(FrensPoolShareOld == 0){
       //console.log("pool", pool);
 
       //create a second staking pool
-      (address pool2) = stakingPoolFactory.create(contOwner, false/*, false, 0, 32000000000000000000*/);
+      (address pool2) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000);
       //connect to staking pool
       stakingPool2 = StakingPool(payable(pool2));
       //console.log the pool address for fun  if(FrensPoolShareOld == 0){

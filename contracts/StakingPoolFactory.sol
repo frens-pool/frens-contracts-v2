@@ -27,19 +27,22 @@ contract StakingPoolFactory is IStakingPoolFactory{
 
     function create(
         address _owner,
-        bool _validatorLocked
+        bool _validatorLocked,
+        bool _frensLocked, 
+        uint _poolMin,
+        uint _poolMax
     )
         public
         returns (
-            //bool frensLocked, //THESE ARE NOT MAINNET READY YET
-            //uint poolMin,
-            //uint poolMax
             address
         )
     {
         StakingPool stakingPool = new StakingPool(
             _owner,
             _validatorLocked,
+            _frensLocked,
+            _poolMin,
+            _poolMax,
             frensStorage
         );
         // allow this stakingpool to mint shares in our NFT contract

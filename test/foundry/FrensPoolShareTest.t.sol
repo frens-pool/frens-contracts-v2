@@ -51,6 +51,8 @@ contract MiscTest is Test {
     bytes signature = hex"92e3289be8c1379caae22fa1d6637c3953620db6eed35d1861b9bb9f0133be8b0cc631d16a3f034960fb826977138c59023543625ecb863cb5a748714ff5ee9f3286887e679cf251b6b0f14b190beac1ad7010cc136da6dd9e98dd4e8b7faae9";
     bytes32 deposit_data_root = 0x4093180202063b0e66cd8aef5a934bfabcf32919e494064542b5f1a3889bf516;
 
+    bytes32[] filler;
+
 
         function setUp() public {
       //deploy storage
@@ -89,14 +91,14 @@ contract MiscTest is Test {
       //set contracts as deployed
      
       //create staking pool through proxy contract
-      (address pool) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000);
+      (address pool) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000, bytes32(0));
       //connect to staking pool
       stakingPool = StakingPool(payable(pool));
       //console.log the pool address for fun  if(FrensPoolShareOld == 0){
       //console.log("pool", pool);
 
       //create a second staking pool
-      (address pool2) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000);
+      (address pool2) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000, bytes32(0));
       //connect to staking pool
       stakingPool2 = StakingPool(payable(pool2));
       //console.log the pool address for fun  if(FrensPoolShareOld == 0){
@@ -114,7 +116,7 @@ contract MiscTest is Test {
       startHoax(alice);
       uint i = 0;
       while( i < 255 ){ //255 is arbitrarily chosen, the point is to check a few different values.
-        stakingPool.depositToPool{value: 1}();
+        stakingPool.depositToPool{value: 1}(filler);
  
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, i);
         assertTrue(id == i );
@@ -133,7 +135,7 @@ contract MiscTest is Test {
       startHoax(alice);
       uint i = 0;
       while( i < 255 ){
-        stakingPool.depositToPool{value: 1}();
+        stakingPool.depositToPool{value: 1}(filler);
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, i);
         assertTrue(id == i, "first is is 0");
         uint balanceOfAlice = frensPoolShare.balanceOf(alice);
@@ -148,7 +150,7 @@ contract MiscTest is Test {
       uint i = 0;
        while( i < 255 ){
         assertFalse(frensPoolShare.exists(i));
-        stakingPool.depositToPool{value: 1}();
+        stakingPool.depositToPool{value: 1}(filler);
         assertTrue(frensPoolShare.exists(i));
         i++;
       }
@@ -159,15 +161,15 @@ contract MiscTest is Test {
       startHoax(alice);
       uint i = 0;
       while( i < 255 ){
-        stakingPool.depositToPool{value: 1}();
+        stakingPool.depositToPool{value: 1}(filler);
         address sbStakingPool = frensPoolShare.getPoolById(i);
         assertEq(address(stakingPool), sbStakingPool);
         i++;
-        stakingPool2.depositToPool{value: 1}();
+        stakingPool2.depositToPool{value: 1}(filler);
         address sbStakingPool2 = frensPoolShare.getPoolById(i);
         assertEq(address(stakingPool2), sbStakingPool2);
         i++;
-        stakingPool.depositToPool{value: 1}(); //one more to throw off the even/odd thing for fun
+        stakingPool.depositToPool{value: 1}(filler); //one more to throw off the even/odd thing for fun
         sbStakingPool = frensPoolShare.getPoolById(i);
         assertEq(address(stakingPool), sbStakingPool);
         i++; 
@@ -178,7 +180,7 @@ contract MiscTest is Test {
       startHoax(alice);
       uint i = 0;
       while( i < 64 ){
-        stakingPool.depositToPool{value: 1}();
+        stakingPool.depositToPool{value: 1}(filler);
         i++;
       }
       assertFalse(frensPoolShare.isApprovedForAll(alice, bob));
@@ -200,17 +202,17 @@ contract MiscTest is Test {
       uint i = 0;
       while( i < 255 ){
         hoax(alice);
-        stakingPool.depositToPool{value: 1}();
+        stakingPool.depositToPool{value: 1}(filler);
         address sbAlice = frensPoolShare.ownerOf(i);
         assertEq(alice, sbAlice);
         i++;
         hoax(bob);
-        stakingPool2.depositToPool{value: 1}();
+        stakingPool2.depositToPool{value: 1}(filler);
         address sbBob = frensPoolShare.ownerOf(i);
         assertEq(bob, sbBob);
         i++;
         hoax(bob);
-        stakingPool.depositToPool{value: 1}(); //one more to throw off the even/odd thing for fun
+        stakingPool.depositToPool{value: 1}(filler); //one more to throw off the even/odd thing for fun
         sbBob = frensPoolShare.ownerOf(i);
         assertEq(bob, sbBob);
         i++; 
@@ -219,7 +221,7 @@ contract MiscTest is Test {
 
     function testSafeTransferFrom() public {
       hoax(alice);
-      stakingPool.depositToPool{value: 1}();
+      stakingPool.depositToPool{value: 1}(filler);
       uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
       assertEq(alice, frensPoolShare.ownerOf(id));
       hoax(bob);
@@ -243,7 +245,7 @@ contract MiscTest is Test {
       startHoax(alice);
       uint i = 0;
       while( i < 255 ){
-        stakingPool.depositToPool{value: 1}();
+        stakingPool.depositToPool{value: 1}(filler);
         uint id = frensPoolShare.tokenByIndex(i);
         assertTrue(id == i );
         i++;
@@ -252,7 +254,7 @@ contract MiscTest is Test {
 
     function testTransferFrom() public {
       hoax(alice);
-      stakingPool.depositToPool{value: 1}();
+      stakingPool.depositToPool{value: 1}(filler);
       uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
       assertEq(alice, frensPoolShare.ownerOf(id));
       hoax(bob);

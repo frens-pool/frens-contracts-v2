@@ -10,7 +10,8 @@ interface IStakingPoolFactory {
     bool _validatorLocked, 
     bool frensLocked,
     uint poolMin,
-    uint poolMax
+    uint poolMax,
+    bytes32 merkleRoot
    ) external returns(address);
 
 }

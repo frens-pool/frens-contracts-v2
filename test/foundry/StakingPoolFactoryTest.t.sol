@@ -86,25 +86,11 @@ contract StakingPoolTest is Test {
       //initialise art
       frensStorage.setAddress(keccak256(abi.encodePacked("contract.address", "FrensOracle")), address(frensOracle));
       //set contracts as deployed
-     
-      //create staking pool through proxy contract
-      (address pool) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000);
-      //connect to staking pool
-      stakingPool = StakingPool(payable(pool));
-      //console.log the pool address for fun  if(FrensPoolShareOld == 0){
-      //console.log("pool", pool);
-
-      //create a second staking pool through proxy contract
-      (address pool2) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000);
-      //connect to staking pool
-      stakingPool2 = StakingPool(payable(pool2));
-      //console.log the pool address for fun  if(FrensPoolShareOld == 0){
-      //console.log("pool2", pool2);
 
     }
 
   function testFactory() public {
-    address pool3 = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000);
+    address pool3 = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000, bytes32(0));
     StakingPool stakingPool3 = StakingPool(payable(pool3));
     vm.expectRevert("not enough eth");
     hoax(contOwner);

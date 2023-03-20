@@ -30,7 +30,8 @@ contract StakingPoolFactory is IStakingPoolFactory{
         bool _validatorLocked,
         bool _frensLocked, 
         uint _poolMin,
-        uint _poolMax
+        uint _poolMax,
+        bytes32 _merkleRoot
     )
         public
         returns (
@@ -43,6 +44,7 @@ contract StakingPoolFactory is IStakingPoolFactory{
             _frensLocked,
             _poolMin,
             _poolMax,
+            _merkleRoot,
             frensStorage
         );
         // allow this stakingpool to mint shares in our NFT contract

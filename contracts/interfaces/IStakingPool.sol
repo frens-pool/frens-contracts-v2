@@ -19,7 +19,8 @@ interface IStakingPool {
 
     function owner() external view returns (address);
 
-    function depositToPool() external payable;
+    function depositToPool(bytes32[] calldata 
+    ) external payable;
 
     function addToDeposit(uint _id) external payable;
 

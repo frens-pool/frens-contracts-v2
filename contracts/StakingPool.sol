@@ -8,6 +8,7 @@ import "./interfaces/IStakingPool.sol";
 import "./interfaces/IFrensArt.sol";
 import "./interfaces/IFrensOracle.sol";
 import "./interfaces/IFrensStorage.sol";
+import "./interfaces/IFrensMerkleProver.sol";
 
 contract StakingPool is IStakingPool, Ownable{
     event Stake(address depositContractAddress, address caller);
@@ -64,6 +65,7 @@ contract StakingPool is IStakingPool, Ownable{
     mapping(uint => uint) public frenPastClaim;
     mapping(uint => bool) public locked; //transfer locked (must use ragequit)
     mapping(uint => RageQuit) public rageQuitInfo;
+    mapping(address => bool) public hasClaimed;
 
     uint public totalDeposits;
     uint public totalClaims;
@@ -75,11 +77,13 @@ contract StakingPool is IStakingPool, Ownable{
     bool public validatorLocked;
     bool public transferLocked;
     bool public validatorSet;
+    bool public privatePool;
 
     bytes public pubKey;
     bytes public withdrawal_credentials;
     bytes public signature;
     bytes32 public deposit_data_root;
+    bytes32 public merkleRoot;
 
     IFrensPoolShare public frensPoolShare;
     IFrensArt public artForPool;
@@ -91,6 +95,7 @@ contract StakingPool is IStakingPool, Ownable{
         bool frensLocked_,
         uint poolMin_,
         uint poolMax_,
+        bytes32 merkleRoot_,
         IFrensStorage frensStorage_
     ) {
         frensStorage = frensStorage_;
@@ -105,10 +110,16 @@ contract StakingPool is IStakingPool, Ownable{
         } else {
             currentState = PoolState.acceptingDeposits;
         }
+        if(merkleRoot_ != bytes32(0)){
+            merkleRoot = merkleRoot_;
+            privatePool = true;
+        }
         _transferOwnership(owner_);
     }
 
-    function depositToPool()
+    function depositToPool(
+        bytes32[] calldata merkleProof
+        )
         external
         payable
         noZeroValueTxn
@@ -117,6 +128,12 @@ contract StakingPool is IStakingPool, Ownable{
     {
         require(msg.value >= poolMin, "below minimum deposit for pool");
         require(msg.value <= poolMax, "above maximum deposit for pool");
+        if(privatePool){
+            require(!hasClaimed[msg.sender], "you have already made your deposit");
+            IFrensMerkleProver frensMerkleProver = IFrensMerkleProver(frensStorage.getAddress(keccak256(abi.encodePacked("contract.address", "FrensMerkleProver"))));
+            frensMerkleProver.verify(merkleProof, merkleRoot, msg.sender);
+            hasClaimed[msg.sender] = true;
+        }
         uint id = frensPoolShare.totalSupply();
         depositForId[id] = msg.value;
         totalDeposits += msg.value;

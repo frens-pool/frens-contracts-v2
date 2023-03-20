@@ -52,6 +52,8 @@ contract StakingPoolTest is Test {
     bytes signature = hex"92e3289be8c1379caae22fa1d6637c3953620db6eed35d1861b9bb9f0133be8b0cc631d16a3f034960fb826977138c59023543625ecb863cb5a748714ff5ee9f3286887e679cf251b6b0f14b190beac1ad7010cc136da6dd9e98dd4e8b7faae9";
     bytes32 deposit_data_root = 0x4093180202063b0e66cd8aef5a934bfabcf32919e494064542b5f1a3889bf516;
 
+    bytes32[] filler;
+
     function setUp() public {
       //deploy storage
       frensStorage = new FrensStorage();
@@ -91,14 +93,14 @@ contract StakingPoolTest is Test {
       //set contracts as deployed
      
       //create staking pool through proxy contract
-      (address pool) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000);
+      (address pool) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000, bytes32(0));
       //connect to staking pool
       stakingPool = StakingPool(payable(pool));
       //console.log the pool address for fun  if(FrensPoolShareOld == 0){
       //console.log("pool", pool);
 
       //create a second staking pool through proxy contract
-      (address pool2) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000);
+      (address pool2) = stakingPoolFactory.create(contOwner, false, false, 0, 32000000000000000000, bytes32(0));
       //connect to staking pool
       stakingPool2 = StakingPool(payable(pool2));
       //console.log the pool address for fun  if(FrensPoolShareOld == 0){
@@ -114,7 +116,7 @@ contract StakingPoolTest is Test {
     function testDeposit(uint72 x) public {
       if(x > 0 && x <= 32 ether){
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
         assertTrue(id == 0, "first id is 0");
         uint depAmt = stakingPool.depositForId(id);
@@ -124,18 +126,18 @@ contract StakingPoolTest is Test {
       } else if(x == 0) {
         vm.expectRevert("must deposit ether");
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
       } else {
         vm.expectRevert("total deposits cannot be more than 32 Eth");
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
       }
     }
 
     function testAddToDeposit(uint64 x, uint64 y) public {
       if(x > 0 && uint(x) + uint(y) <= 32 ether){
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
         assertTrue(id == 0, "first id is 0");
         uint depAmt = stakingPool.depositForId(id);
@@ -153,10 +155,10 @@ contract StakingPoolTest is Test {
       } else if(x == 0) {
         vm.expectRevert("must deposit ether");
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
       } else { //uint64 cannot be > 32 ether (max 18,446,744,073,709,551,615 or ~18.45 ether)
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
         vm.expectRevert("total deposits cannot be more than 32 Eth");
         stakingPool.addToDeposit{value: y}(id);
@@ -166,7 +168,7 @@ contract StakingPoolTest is Test {
     function testAddToDepositWrongPool(uint64 x, uint64 y) public {
       if(x > 0 && uint(x) + uint(y) <= 32 ether){
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
         assertTrue(id == 0, "first id is 0");
         uint depAmt = stakingPool.depositForId(id);
@@ -182,10 +184,10 @@ contract StakingPoolTest is Test {
       } else if(x == 0) {
         vm.expectRevert("must deposit ether");
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
       } else { //uint64 cannot be > 32 ether (max 18,446,744,073,709,551,615 or ~18.45 ether)
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
         vm.expectRevert("total deposits cannot be more than 32 Eth");
         stakingPool.addToDeposit{value: y}(id);
@@ -195,7 +197,7 @@ contract StakingPoolTest is Test {
     function testWithdraw(uint72 x, uint72 y) public {
       if(x >= y && x > 0 && uint(x) <= 32 ether){
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
         assertTrue(id == 0, "first id should be 0");
         uint depAmt = stakingPool.depositForId(id);
@@ -207,14 +209,14 @@ contract StakingPoolTest is Test {
       } else if(x == 0) {
         vm.expectRevert("must deposit ether");
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
       } else if(uint(x) > 32 ether) {
         vm.expectRevert("total deposits cannot be more than 32 Eth");
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
       } else {
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
         assertTrue(id == 0, "first id is 0");
         vm.expectRevert("invalid amount, withdraw less or use withdrawAll");
@@ -226,7 +228,7 @@ contract StakingPoolTest is Test {
       //stakingPool.sendToOwner();
       uint initialBalance = address(stakingPool).balance; //bc someone sent eth to this address on mainnet.
       hoax(alice);
-      stakingPool.depositToPool{value: 32000000000000000000}();
+      stakingPool.depositToPool{value: 32000000000000000000}(filler);
       assertEq(initialBalance + 32000000000000000000, address(stakingPool).balance);
       bytes32 deposit_count_hash = keccak256(depositContract.get_deposit_count());
       hoax(contOwner);
@@ -240,7 +242,7 @@ contract StakingPoolTest is Test {
       //test reverts for trying to deposit when staked
       startHoax(alice);
       vm.expectRevert("not accepting deposits");
-      stakingPool.depositToPool{value: 1}();
+      stakingPool.depositToPool{value: 1}(filler);
       vm.expectRevert("not accepting deposits");
       stakingPool.addToDeposit{value: 1}(1);
     }
@@ -248,7 +250,7 @@ contract StakingPoolTest is Test {
     function testStakeTwoStep() public { 
       uint initialBalance = address(stakingPool).balance; //bc someone sent eth to this address on mainnet.
       hoax(alice);
-      stakingPool.depositToPool{value: 32000000000000000000}();
+      stakingPool.depositToPool{value: 32000000000000000000}(filler);
       assertEq(initialBalance + 32000000000000000000, address(stakingPool).balance);
       bytes32 deposit_count_hash = keccak256(depositContract.get_deposit_count());
       startHoax(contOwner);
@@ -268,9 +270,9 @@ contract StakingPoolTest is Test {
       uint bobDeposit = 32000000000000000000 - aliceDeposit;
       if(x != 0 && y > 100){
         hoax(alice);
-        stakingPool.depositToPool{value: aliceDeposit}();
+        stakingPool.depositToPool{value: aliceDeposit}(filler);
         hoax(bob);
-        stakingPool.depositToPool{value: bobDeposit}();
+        stakingPool.depositToPool{value: bobDeposit}(filler);
         payable(stakingPool).transfer(y);
         vm.expectRevert("use withdraw when not staked");
         stakingPool.claim(1);
@@ -306,12 +308,12 @@ contract StakingPoolTest is Test {
       } else if(x == 0) {
         vm.expectRevert("must deposit ether");
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
       } else {
         hoax(alice);
-        stakingPool.depositToPool{value: aliceDeposit}();
+        stakingPool.depositToPool{value: aliceDeposit}(filler);
         hoax(bob);
-        stakingPool.depositToPool{value: bobDeposit}();
+        stakingPool.depositToPool{value: bobDeposit}(filler);
         startHoax(contOwner);
         stakingPool.stake(pubkey, withdrawal_credentials, signature, deposit_data_root);
         payable(stakingPool).transfer(y);
@@ -338,7 +340,7 @@ contract StakingPoolTest is Test {
 /*
     function testArbitrarySend() public {
       hoax(alice);
-      stakingPool.depositToPool{value: 1 ether}();
+      stakingPool.depositToPool{value: 1 ether}(filler);
       uint bobBalance = address(bob).balance;
 
       hoax(contOwner);
@@ -357,7 +359,7 @@ contract StakingPoolTest is Test {
     function testBurn(uint72 x) public { //this would be a stupid thing to want to do, so it will probably not be included
       if(x > 0 && x <= 32 ether){
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
         stakingPool.burn(id);
         vm.expectRevert("ERC721Enumerable: owner index out of bounds");
@@ -365,11 +367,11 @@ contract StakingPoolTest is Test {
       } else if(x == 0) {
         vm.expectRevert("must deposit ether");
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
       } else {
         vm.expectRevert("total deposits cannot be more than 32 Eth");
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
       }
     }
 */
@@ -382,9 +384,9 @@ function testFees(uint32 x, uint32 y) public {
         vm.prank(address(this));
         frensStorage.setUint(keccak256(abi.encodePacked("protocol.fee.percent")), 5);
         hoax(alice);
-        stakingPool.depositToPool{value: aliceDeposit}();
+        stakingPool.depositToPool{value: aliceDeposit}(filler);
         hoax(bob);
-        stakingPool.depositToPool{value: bobDeposit}();
+        stakingPool.depositToPool{value: bobDeposit}(filler);
         payable(stakingPool).transfer(y);
         vm.expectRevert("use withdraw when not staked");
         stakingPool.claim(1);
@@ -439,12 +441,12 @@ function testFees(uint32 x, uint32 y) public {
       } else if(x == 0) {
         vm.expectRevert("must deposit ether");
         startHoax(alice);
-        stakingPool.depositToPool{value: x}();
+        stakingPool.depositToPool{value: x}(filler);
       } else {
         hoax(alice);
-        stakingPool.depositToPool{value: aliceDeposit}();
+        stakingPool.depositToPool{value: aliceDeposit}(filler);
         hoax(bob);
-        stakingPool.depositToPool{value: bobDeposit}();
+        stakingPool.depositToPool{value: bobDeposit}(filler);
         startHoax(contOwner);
         stakingPool.stake(pubkey, withdrawal_credentials, signature, deposit_data_root);
         payable(stakingPool).transfer(y);
@@ -456,7 +458,7 @@ function testFees(uint32 x, uint32 y) public {
 
     function testExit() public {
       hoax(alice);
-      stakingPool.depositToPool{value: 32 ether}();
+      stakingPool.depositToPool{value: 32 ether}(filler);
       vm.prank(contOwner);
       stakingPool.stake(pubkey, withdrawal_credentials, signature, deposit_data_root);
       vm.expectRevert("must be called by oracle");
@@ -472,11 +474,11 @@ function testFees(uint32 x, uint32 y) public {
     }
 
     function testMinMax(uint72 x) public {
-      (address pool3) = stakingPoolFactory.create(contOwner, false, false, 2 ether, 4 ether);
+      (address pool3) = stakingPoolFactory.create(contOwner, false, false, 2 ether, 4 ether, bytes32(0));
       StakingPool stakingPool3 = StakingPool(payable(pool3));
       startHoax(alice);
       if(x >= 2 ether && x <= 4 ether){
-        stakingPool3.depositToPool{value: x}();
+        stakingPool3.depositToPool{value: x}(filler);
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
         assertTrue(id == 0, "first id is 0");
         uint depAmt = stakingPool3.depositForId(id);
@@ -489,25 +491,25 @@ function testFees(uint32 x, uint32 y) public {
         }
       } else if(x == 0) {
         vm.expectRevert("must deposit ether");
-        stakingPool3.depositToPool{value: x}();
+        stakingPool3.depositToPool{value: x}(filler);
       } else if(x > 32 ether){
         vm.expectRevert("total deposits cannot be more than 32 Eth");
-        stakingPool3.depositToPool{value: x}();
+        stakingPool3.depositToPool{value: x}(filler);
       } else if(x > 4 ether) {
         vm.expectRevert("above maximum deposit for pool");
-        stakingPool3.depositToPool{value: x}();
+        stakingPool3.depositToPool{value: x}(filler);
       } else if(x < 2 ether) {
         vm.expectRevert("below minimum deposit for pool");
-        stakingPool3.depositToPool{value: x}();
+        stakingPool3.depositToPool{value: x}(filler);
       }
     }
 
     function testWithdrawAll(uint72 x) public {
-      (address pool3) = stakingPoolFactory.create(contOwner, false, false, 2 ether, 4 ether);
+      (address pool3) = stakingPoolFactory.create(contOwner, false, false, 2 ether, 4 ether, bytes32(0));
       StakingPool stakingPool3 = StakingPool(payable(pool3));
       startHoax(alice);
       if(x >= 2 ether && x <= 4 ether){
-        stakingPool3.depositToPool{value: x}();
+        stakingPool3.depositToPool{value: x}(filler);
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
         assertTrue(id == 0, "first id is 0");
         uint depAmt = stakingPool3.depositForId(id);
@@ -523,16 +525,16 @@ function testFees(uint32 x, uint32 y) public {
         assertEq(aliceBalance + x, alice.balance, "alice balance mismatch");
       } else if(x == 0) {
         vm.expectRevert("must deposit ether");
-        stakingPool3.depositToPool{value: x}();
+        stakingPool3.depositToPool{value: x}(filler);
       } else if(x > 32 ether){
         vm.expectRevert("total deposits cannot be more than 32 Eth");
-        stakingPool3.depositToPool{value: x}();
+        stakingPool3.depositToPool{value: x}(filler);
       } else if(x > 4 ether) {
         vm.expectRevert("above maximum deposit for pool");
-        stakingPool3.depositToPool{value: x}();
+        stakingPool3.depositToPool{value: x}(filler);
       } else if(x < 2 ether) {
         vm.expectRevert("below minimum deposit for pool");
-        stakingPool3.depositToPool{value: x}();
+        stakingPool3.depositToPool{value: x}(filler);
       }
     }
 }

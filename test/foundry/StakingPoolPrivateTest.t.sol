@@ -141,4 +141,57 @@ contract StakingPoolPrivateTest is Test {
       }
     }
 
+    function testMultipleDeposit(uint32 x, uint32 y) public {
+      uint maxUint32 = 4294967295;
+      if(x != 0 && y != 0){
+        uint aliceDeposit = uint(x) * 31999999999999999999 / maxUint32 - y;
+        uint bobDeposit = 32000000000000000000 - (aliceDeposit + y);
+        hoax(alice);
+        stakingPool.depositToPool{value: aliceDeposit}(aliceProof);
+        vm.expectRevert("you have already made your deposit");
+        vm.prank(alice);
+        stakingPool.depositToPool{value: bobDeposit}(aliceProof);
+        vm.expectRevert("invalid merkle proof");
+        hoax(bob);
+        stakingPool.depositToPool{value: bobDeposit}(contOwnerProof);
+        vm.prank(bob);
+        stakingPool.depositToPool{value: bobDeposit}(bobProof);
+        vm.expectRevert("you have already made your deposit");
+        vm.prank(bob);
+        stakingPool.depositToPool{value: y}(bobProof);
+        vm.expectRevert("invalid merkle proof");
+        hoax(contOwner);
+        stakingPool.depositToPool{value: y}(bobProof);
+        vm.prank(contOwner);
+        stakingPool.depositToPool{value: y}(contOwnerProof);
+      }else if(x == 0 && y != 0) {
+        uint bobDeposit = 32000000000000000000 - y;
+        vm.expectRevert("invalid merkle proof");
+        hoax(bob);
+        stakingPool.depositToPool{value: bobDeposit}(aliceProof);
+        vm.prank(bob);
+        stakingPool.depositToPool{value: bobDeposit}(bobProof);
+        vm.expectRevert("invalid merkle proof");
+        hoax(contOwner);
+        stakingPool.depositToPool{value: y}(aliceProof);
+        vm.prank(contOwner);
+        stakingPool.depositToPool{value: y}(contOwnerProof);
+
+      }else if(x != 0 && y == 0){
+        uint aliceDeposit = uint(x) * 31999999999999999999 / maxUint32;
+        uint bobDeposit = 32000000000000000000 - aliceDeposit;
+        vm.expectRevert("invalid merkle proof");
+        hoax(alice);
+        stakingPool.depositToPool{value: aliceDeposit}(bobProof);
+        vm.prank(alice);
+        stakingPool.depositToPool{value: aliceDeposit}(aliceProof);
+        vm.expectRevert("invalid merkle proof");
+        hoax(bob);
+        stakingPool.depositToPool{value: bobDeposit}(filler);
+        vm.prank(bob);
+        stakingPool.depositToPool{value: bobDeposit}(bobProof);
+      }
+    }
+    
+
 }

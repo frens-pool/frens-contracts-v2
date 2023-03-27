@@ -139,9 +139,11 @@ contract StakingPoolTest is Test {
       //set ragequit
       vm.prank(alice);
       stakingPool.rageQuit(id, aliceDeposit);
+      /*
       vm.prank(alice);
       frensPoolShare.approve(address(stakingPool), id);
-      (uint price,/*time*/) = stakingPool.rageQuitInfo(id);
+      */
+      (uint price,/*time*/,/*quittig?*/) = stakingPool.rageQuitInfo(id);
       assertEq(price, aliceDeposit, "price should = deposit");
       //try to unlock too soon
       vm.prank(alice);
@@ -180,9 +182,11 @@ contract StakingPoolTest is Test {
       //set ragequit
       vm.prank(alice);
       stakingPool.rageQuit(id, aliceDeposit);
+      /*
       vm.prank(alice);
       frensPoolShare.approve(address(stakingPool), id);
-      (uint price,/*time*/) = stakingPool.rageQuitInfo(id);
+      */
+      (uint price,/*time*/,/*quittig?*/) = stakingPool.rageQuitInfo(id);
       assertEq(price, aliceDeposit, "price should = deposit");
       //try to unlock too soon
       vm.prank(alice);

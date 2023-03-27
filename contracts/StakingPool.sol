@@ -59,6 +59,7 @@ contract StakingPool is IStakingPool, Ownable{
     struct RageQuit {
         uint price;
         uint time;
+        bool rageQuitting;
     }
 
     mapping(uint => uint) public depositForId;
@@ -306,14 +307,15 @@ contract StakingPool is IStakingPool, Ownable{
         require(msg.sender == address(frensStorage.getAddress(keccak256(abi.encodePacked("contract.address", "FrensOracle")))), "must be called by oracle");
         currentState = PoolState.exited;
     }
-
     
   function rageQuit(uint _id, uint _price) public onlyIdOwner(_id) correctPoolOnly(_id){
+    require(locked[_id], "no reason to rageQuit an unlocked share");
     uint deposit = depositForId[_id];
     require(_price <= deposit, "cannot set price higher than deposit");
-    rageQuitInfo[_id].price = _price;
-    rageQuitInfo[_id].time =  block.timestamp;
-    //must set transfer approval to this contract
+    RageQuit storage newQuit = rageQuitInfo[_id];
+    newQuit.price = _price;
+    newQuit.time =  block.timestamp;
+    newQuit.rageQuitting = true;
   }
   
   function buyOut(
@@ -325,6 +327,7 @@ contract StakingPool is IStakingPool, Ownable{
     onlyIdOwner(buyersTokenId) 
     correctPoolOnly(buyersTokenId) 
     correctPoolOnly(rageQuitId){
+        require(rageQuitInfo[rageQuitId].rageQuitting, "must be rage quitting");
         require(msg.value >= rageQuitInfo[rageQuitId].price, "must send correct value");
         address rageOwner = frensPoolShare.ownerOf(rageQuitId);
         payable(rageOwner).transfer(msg.value);
@@ -335,18 +338,21 @@ contract StakingPool is IStakingPool, Ownable{
             rageQuitId
         );
         locked[rageQuitId] = true;
+        rageQuitInfo[rageQuitId].rageQuitting = false;
     }
 
   function unlockTransfer(uint _id) public {
     uint endTime = rageQuitInfo[_id].time + 1 weeks;
     require(endTime <= block.timestamp, "allow one week before unlock");
     locked[_id] = false;
+    rageQuitInfo[_id].rageQuitting = false;
   }
-
+  /*
   function burn(uint tokenId) public onlyIdOwner(tokenId) { //this is only here to test the burn method in frensPoolShare
     frensPoolShare.burn(tokenId);
   }
-
+  */
+  
     //getters
 
     function getIdsInThisPool() public view returns(uint[] memory) {

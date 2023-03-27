@@ -19,8 +19,7 @@ interface IStakingPool {
 
     function owner() external view returns (address);
 
-    function depositToPool(bytes32[] calldata 
-    ) external payable;
+    function depositToPool(bytes32[] calldata) external payable;
 
     function addToDeposit(uint _id) external payable;
 
@@ -40,7 +39,9 @@ interface IStakingPool {
 
     function unlockTransfer(uint _id) external;
 
-    function burn(uint tokenId) external;
+    function rageQuitInfo(uint id) external view returns(uint, uint, bool);
+
+    //function burn(uint tokenId) external;
 
     function setPubKey(
         bytes calldata pubKey,

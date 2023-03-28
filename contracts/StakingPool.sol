@@ -159,6 +159,8 @@ contract StakingPool is IStakingPool, Ownable{
 
     function withdrawAll(uint _id) external mustBeAccepting correctPoolOnly(_id) onlyIdOwner(_id){
         _withdraw(_id, depositForId[_id]);
+        hasClaimed[msg.sender] = false;
+        frensPoolShare.burn(_id);
     }
 
     function _withdraw(uint _id, uint _amount) internal {
@@ -308,15 +310,15 @@ contract StakingPool is IStakingPool, Ownable{
         currentState = PoolState.exited;
     }
     
-  function rageQuit(uint _id, uint _price) public onlyIdOwner(_id) correctPoolOnly(_id){
-    require(locked[_id], "no reason to rageQuit an unlocked share");
-    uint deposit = depositForId[_id];
-    require(_price <= deposit, "cannot set price higher than deposit");
-    RageQuit storage newQuit = rageQuitInfo[_id];
-    newQuit.price = _price;
-    newQuit.time =  block.timestamp;
-    newQuit.rageQuitting = true;
-  }
+    function rageQuit(uint _id, uint _price) public onlyIdOwner(_id) correctPoolOnly(_id){
+        require(locked[_id], "no reason to rageQuit an unlocked share");
+        uint deposit = depositForId[_id];
+        require(_price <= deposit, "cannot set price higher than deposit");
+        RageQuit storage newQuit = rageQuitInfo[_id];
+        newQuit.price = _price;
+        newQuit.time =  block.timestamp;
+        newQuit.rageQuitting = true;
+    }
   
   function buyOut(
     uint rageQuitId, 
@@ -341,17 +343,17 @@ contract StakingPool is IStakingPool, Ownable{
         rageQuitInfo[rageQuitId].rageQuitting = false;
     }
 
-  function unlockTransfer(uint _id) public {
-    uint endTime = rageQuitInfo[_id].time + 1 weeks;
-    require(endTime <= block.timestamp, "allow one week before unlock");
-    locked[_id] = false;
-    rageQuitInfo[_id].rageQuitting = false;
-  }
-  /*
-  function burn(uint tokenId) public onlyIdOwner(tokenId) { //this is only here to test the burn method in frensPoolShare
-    frensPoolShare.burn(tokenId);
-  }
-  */
+    function unlockTransfer(uint _id) public {
+        uint endTime = rageQuitInfo[_id].time + 1 weeks;
+        require(endTime <= block.timestamp, "allow one week before unlock");
+        locked[_id] = false;
+        rageQuitInfo[_id].rageQuitting = false;
+    }
+    /*
+    function burn(uint tokenId) public onlyIdOwner(tokenId) { //this is only here to test the burn method in frensPoolShare
+        frensPoolShare.burn(tokenId);
+    }
+    */
   
     //getters
 

@@ -52,6 +52,13 @@ contract StakingPool is IStakingPool, Ownable{
         _;
     }
 
+    modifier reentrancyGuard() {
+        require(!entered, "nope");
+        entered = true;
+        _;
+        entered = false;
+    }
+
     enum PoolState {
         awaitingValidatorInfo,
         acceptingDeposits,
@@ -95,8 +102,10 @@ contract StakingPool is IStakingPool, Ownable{
     bool public transferLocked;
     //set as true once the validator info has been set for the pool
     bool public validatorSet;
-    //setas true if pool is deployed with a merkle root for the allow list
+    //set as true if pool is deployed with a merkle root for the allow list
     bool public privatePool;
+    //rageQuit reentrancy protection
+    bool public entered;
 
     //validator public key for pool
     bytes public pubKey;
@@ -367,6 +376,7 @@ contract StakingPool is IStakingPool, Ownable{
         onlyIdOwner(buyersTokenId) 
         correctPoolOnly(buyersTokenId) 
         correctPoolOnly(rageQuitId)
+        reentrancyGuard
     {
         require(rageQuitInfo[rageQuitId].rageQuitting, "must be rage quitting");
         require(msg.value >= rageQuitInfo[rageQuitId].price, "must send correct value");
@@ -384,7 +394,7 @@ contract StakingPool is IStakingPool, Ownable{
     }
 
     ///@dev once a week has elapsed after initiating the rageQuit, the NFT owner can unlock the NFT and sell it on the open market.
-    function unlockTransfer(uint _id) public {
+    function unlockTransfer(uint _id) public reentrancyGuard{
         uint endTime = rageQuitInfo[_id].time + 1 weeks;
         require(endTime <= block.timestamp, "allow one week before unlock");
         locked[_id] = false;

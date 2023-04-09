@@ -4,7 +4,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 /// @title The primary persistent storage for Frens Staking Pools
 /// @author modified 04-Dec-2022 by 0xWildhare originally by David Rugendyke (h/t David and Rocket Pool!)
-/// this code is modified from the Rocket Pool RocketStorage contract all "Rocket" replaced with "Frens" - everything not used by frens has beed removed.
+/// @dev this code is modified from the Rocket Pool RocketStorage contract all "Rocket" replaced with "Frens" - everything not used by frens has beed removed.
 
 import "./interfaces/IFrensStorage.sol";
 
@@ -59,6 +59,18 @@ contract FrensStorage is IFrensStorage{
         // Update guardian and clear storage
         guardian = newGuardian;
         delete newGuardian;
+        // Emit event
+        emit GuardianChanged(oldGuardian, guardian);
+    }
+
+        // Confirms burning guardianship
+    function burnKeys() external override onlyGuardian{
+        // Check that new guardian has been set to zero address (are you sure?)
+        require(address(0) == newGuardian, "must set guardian to 0x00 first");
+        // Store old guardian for event
+        address oldGuardian = guardian;
+        // delete guardian 
+        delete guardian;
         // Emit event
         emit GuardianChanged(oldGuardian, guardian);
     }

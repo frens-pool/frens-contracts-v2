@@ -13,7 +13,7 @@ import "./interfaces/IFrensArt.sol";
 import "./interfaces/IFrensOracle.sol";
 import "./interfaces/IFrensStorage.sol";
 
-contract StakingPool is IStakingPool, Ownable{
+contract StakingPool is IStakingPool, Ownable {
     event Stake(address depositContractAddress, address caller);
     event DepositToPool(uint amount, address depositer, uint id);
 
@@ -53,7 +53,7 @@ contract StakingPool is IStakingPool, Ownable{
         exited
     }
     PoolState currentState;
-    
+
     //this is unused in this version of the system
     //it must be included to avoid requiring an update to FrensPoolShare when rageQuit is added
     struct RageQuit {
@@ -102,24 +102,25 @@ contract StakingPool is IStakingPool, Ownable{
     IFrensArt public artForPool;
     IFrensStorage public frensStorage;
 
-    /**@dev when the pool is deploied by the factory, the owner, art contract, 
-    *storage contract, and if the validator is locked are all set. 
-    *The pool state is set according to whether or not the validator is locked.
-    */
-    constructor(
-        address owner_,
-        bool validatorLocked_,
-        IFrensStorage frensStorage_
-    ) {
+    /**@dev when the pool is deploied by the factory, the owner, art contract,
+     *storage contract, and if the validator is locked are all set.
+     *The pool state is set according to whether or not the validator is locked.
+     */
+    constructor(address owner_, IFrensStorage frensStorage_) {
         frensStorage = frensStorage_;
-        artForPool = IFrensArt(frensStorage.getAddress(keccak256(abi.encodePacked("contract.address", "FrensArt"))));
-        frensPoolShare = IFrensPoolShare(frensStorage.getAddress(keccak256(abi.encodePacked("contract.address", "FrensPoolShare"))));
-        validatorLocked = validatorLocked_;
-        if (validatorLocked) {
-            currentState = PoolState.awaitingValidatorInfo;
-        } else {
-            currentState = PoolState.acceptingDeposits;
-        }
+        artForPool = IFrensArt(
+            frensStorage.getAddress(
+                keccak256(abi.encodePacked("contract.address", "FrensArt"))
+            )
+        );
+        frensPoolShare = IFrensPoolShare(
+            frensStorage.getAddress(
+                keccak256(
+                    abi.encodePacked("contract.address", "FrensPoolShare")
+                )
+            )
+        );
+        currentState = PoolState.awaitingValidatorInfo;
         _transferOwnership(owner_);
     }
 
@@ -144,47 +145,28 @@ contract StakingPool is IStakingPool, Ownable{
 
     ///@notice allows a user to add funds to an existing NFT ID
     ///@dev recieves funds and increases deposit for a FrensPoolShare ID
-    function addToDeposit(uint _id) external payable mustBeAccepting maxTotDep correctPoolOnly(_id){
+    function addToDeposit(
+        uint _id
+    ) external payable mustBeAccepting maxTotDep correctPoolOnly(_id) {
         require(frensPoolShare.exists(_id), "id does not exist"); //id must exist
-        
+
         depositForId[_id] += msg.value;
         totalDeposits += msg.value;
     }
 
-    ///@dev stakes 32 ETH from this pool to the deposit contract, accepts validator info
-    function stake(
-        bytes calldata _pubKey,
-        bytes calldata _withdrawal_credentials,
-        bytes calldata _signature,
-        bytes32 _deposit_data_root
-    ) external onlyOwner {
-        //if validator info has previously been entered, check that it is the same, then stake
-        if (validatorSet) {
-            require(keccak256(_pubKey) == keccak256(pubKey), "pubKey mismatch");
-        } else {
-            //if validator info has not previously been entered, enter it, then stake
-            _setPubKey(
-                _pubKey,
-                _withdrawal_credentials,
-                _signature,
-                _deposit_data_root
-            );
-        }
-        _stake();
-    }
-
+   
     ///@dev stakes 32 ETH from this pool to the deposit contract. validator info must already be entered
     function stake() external onlyOwner {
-        _stake();
-    }
-
-    function _stake() internal {
         require(address(this).balance >= 32 ether, "not enough eth");
         require(totalDeposits == 32 ether, "not enough deposits");
         require(currentState == PoolState.acceptingDeposits, "wrong state");
         require(validatorSet, "validator not set");
-        
-        address depositContractAddress = frensStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "DepositContract")));
+
+        address depositContractAddress = frensStorage.getAddress(
+            keccak256(
+                abi.encodePacked("external.contract.address", "DepositContract")
+            )
+        );
         currentState = PoolState.staked;
         IDepositContract(depositContractAddress).deposit{value: 32 ether}(
             pubKey,
@@ -202,20 +184,6 @@ contract StakingPool is IStakingPool, Ownable{
         bytes calldata _signature,
         bytes32 _deposit_data_root
     ) external onlyOwner {
-        _setPubKey(
-            _pubKey,
-            _withdrawal_credentials,
-            _signature,
-            _deposit_data_root
-        );
-    }
-
-    function _setPubKey(
-        bytes calldata _pubKey,
-        bytes calldata _withdrawal_credentials,
-        bytes calldata _signature,
-        bytes32 _deposit_data_root
-    ) internal {
         //get expected withdrawal_credentials based on contract address
         bytes memory withdrawalCredFromAddr = _toWithdrawalCred(address(this));
         //compare expected withdrawal_credentials to provided
@@ -225,7 +193,10 @@ contract StakingPool is IStakingPool, Ownable{
             "withdrawal credential mismatch"
         );
         if (validatorLocked) {
-            require(currentState == PoolState.awaitingValidatorInfo, "wrong state");
+            require(
+                currentState == PoolState.awaitingValidatorInfo,
+                "wrong state"
+            );
             assert(!validatorSet); //this should never fail
             currentState = PoolState.acceptingDeposits;
         }
@@ -244,13 +215,15 @@ contract StakingPool is IStakingPool, Ownable{
         require(depositForId[_id] >= _amount, "not enough deposited");
         depositForId[_id] -= _amount;
         totalDeposits -= _amount;
-        (bool success, /*return data*/) = frensPoolShare.ownerOf(_id).call{value: _amount}("");
+        (bool success /*return data*/, ) = frensPoolShare.ownerOf(_id).call{
+            value: _amount
+        }("");
         assert(success);
     }
 
     ///@notice allows user to claim their portion of the rewards
     ///@dev calculates the rewards due to `_id` and sends them to the owner of `_id`
-    function claim(uint _id) external correctPoolOnly(_id){
+    function claim(uint _id) external correctPoolOnly(_id) {
         require(
             currentState != PoolState.acceptingDeposits,
             "use withdraw when not staked"
@@ -260,10 +233,19 @@ contract StakingPool is IStakingPool, Ownable{
             "must be greater than 100 wei to claim"
         );
         //has the validator exited?
-        bool exited;
+        bool exited ;
         if (currentState != PoolState.exited) {
-            IFrensOracle frensOracle = IFrensOracle(frensStorage.getAddress(keccak256(abi.encodePacked("contract.address", "FrensOracle"))));
+            IFrensOracle frensOracle = IFrensOracle(
+                frensStorage.getAddress(
+                    keccak256(
+                        abi.encodePacked("contract.address", "FrensOracle")
+                    )
+                )
+            );
             exited = frensOracle.checkValidatorState(address(this));
+            if (exited && currentState == PoolState.staked ){
+                currentState = PoolState.exited;
+            }
         } else exited = true;
         //get share for id
         uint amount = _getShare(_id);
@@ -271,34 +253,37 @@ contract StakingPool is IStakingPool, Ownable{
         frenPastClaim[_id] += amount;
         totalClaims += amount;
         //fee? not applied to exited
-        uint feePercent = frensStorage.getUint(keccak256(abi.encodePacked("protocol.fee.percent")));
+        uint feePercent = frensStorage.getUint(
+            keccak256(abi.encodePacked("protocol.fee.percent"))
+        );
         if (feePercent > 0 && !exited) {
-            address feeRecipient = frensStorage.getAddress(keccak256(abi.encodePacked("protocol.fee.recipient")));
+            address feeRecipient = frensStorage.getAddress(
+                keccak256(abi.encodePacked("protocol.fee.recipient"))
+            );
             uint feeAmount = (feePercent * amount) / 100;
-            if (feeAmount > 1){ 
-                (bool success1, /*return data*/) = feeRecipient.call{value: feeAmount - 1}(""); //-1 wei to avoid rounding error issues
+            if (feeAmount > 1) {
+                (bool success1 /*return data*/, ) = feeRecipient.call{
+                    value: feeAmount - 1
+                }(""); //-1 wei to avoid rounding error issues
                 assert(success1);
             }
             amount = amount - feeAmount;
         }
-        (bool success2, /*return data*/) = frensPoolShare.ownerOf(_id).call{value: amount}("");
+        (bool success2 /*return data*/, ) = frensPoolShare.ownerOf(_id).call{
+            value: amount
+        }("");
         assert(success2);
     }
 
-    ///@dev this marks the pool as exited, but does not affect the functionality of amy methods, except that an exited pool no longer extracts fees
-    function exitPool() external {
-        require(msg.sender == address(frensStorage.getAddress(keccak256(abi.encodePacked("contract.address", "FrensOracle")))), "must be called by oracle");
-        currentState = PoolState.exited;
-    }
-
     //getters
-
-    function getIdsInThisPool() public view returns(uint[] memory) {
-      return idsInPool;
+    function getIdsInThisPool() public view returns (uint[] memory) {
+        return idsInPool;
     }
 
     ///@return the share of the validator rewards climable by `_id`
-    function getShare(uint _id) public view correctPoolOnly(_id) returns (uint) {
+    function getShare(
+        uint _id
+    ) public view correctPoolOnly(_id) returns (uint) {
         return _getShare(_id);
     }
 
@@ -306,7 +291,8 @@ contract StakingPool is IStakingPool, Ownable{
         if (address(this).balance == 0) return 0;
         uint frenDep = depositForId[_id];
         uint frenPastClaims = frenPastClaim[_id];
-        uint totFrenRewards = ((frenDep * (address(this).balance + totalClaims)) / totalDeposits);
+        uint totFrenRewards = ((frenDep *
+            (address(this).balance + totalClaims)) / totalDeposits);
         if (totFrenRewards == 0) return 0;
         uint amount = totFrenRewards - frenPastClaims;
         return amount;
@@ -319,7 +305,9 @@ contract StakingPool is IStakingPool, Ownable{
             return 0;
         } else {
             uint share = _getShare(_id);
-            uint feePercent = frensStorage.getUint(keccak256(abi.encodePacked("protocol.fee.percent")));
+            uint feePercent = frensStorage.getUint(
+                keccak256(abi.encodePacked("protocol.fee.percent"))
+            );
             if (feePercent > 0 && currentState != PoolState.exited) {
                 uint feeAmount = (feePercent * share) / 100;
                 share = share - feeAmount;

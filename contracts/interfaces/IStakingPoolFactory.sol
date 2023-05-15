@@ -6,8 +6,8 @@ import "./IFrensArt.sol";
 interface IStakingPoolFactory {
 
   function create(
-    address _owner, 
-    bool _validatorLocked 
+    address _owner 
+    // bool _validatorLocked 
     //bool frensLocked,
     //uint poolMin,
     //uint poolMax

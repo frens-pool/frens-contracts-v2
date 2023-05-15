@@ -31,8 +31,7 @@ contract StakingPoolFactory is IStakingPoolFactory{
     ///@dev creates a new pool
     ///@return address of new pool
     function create(
-        address _owner,
-        bool _validatorLocked
+        address _owner
     )
         public
         returns (
@@ -41,7 +40,6 @@ contract StakingPoolFactory is IStakingPoolFactory{
     {
         StakingPool stakingPool = new StakingPool(
             _owner,
-            _validatorLocked,
             frensStorage
         );
         // allow this stakingpool to mint shares in our NFT contract

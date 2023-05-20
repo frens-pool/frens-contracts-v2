@@ -48,6 +48,7 @@ contract MiscTest is Test {
 
     bytes pubkey = hex"ac542dcb86a85a8deeef9150dbf8ad24860a066deb43b20294ed7fb65257f49899b7103c35b26289035de4227e1cc575";
     bytes withdrawal_credentials = hex"0100000000000000000000004f81992fce2e1846dd528ec0102e6ee1f61ed3e2";
+    bytes withdrawal_credentials2 = hex"010000000000000000000000CB6f5076b5bbae81D7643BfBf57897E8E3FB1db9";
     bytes signature = hex"92e3289be8c1379caae22fa1d6637c3953620db6eed35d1861b9bb9f0133be8b0cc631d16a3f034960fb826977138c59023543625ecb863cb5a748714ff5ee9f3286887e679cf251b6b0f14b190beac1ad7010cc136da6dd9e98dd4e8b7faae9";
     bytes32 deposit_data_root = 0x4093180202063b0e66cd8aef5a934bfabcf32919e494064542b5f1a3889bf516;
 
@@ -89,18 +90,22 @@ contract MiscTest is Test {
       //set contracts as deployed
      
       //create staking pool through proxy contract
-      (address pool) = stakingPoolFactory.create(contOwner, false/*, false, 0, 32000000000000000000*/);
+      (address pool) = stakingPoolFactory.create(contOwner/*, false, 0, 32000000000000000000*/);
       //connect to staking pool
       stakingPool = StakingPool(payable(pool));
       //console.log the pool address for fun  if(FrensPoolShareOld == 0){
       //console.log("pool", pool);
+      hoax(contOwner);
+      stakingPool.setPubKey(pubkey, withdrawal_credentials, signature, deposit_data_root);
 
       //create a second staking pool
-      (address pool2) = stakingPoolFactory.create(contOwner, false/*, false, 0, 32000000000000000000*/);
+      (address pool2) = stakingPoolFactory.create(contOwner/*, false, 0, 32000000000000000000*/);
       //connect to staking pool
       stakingPool2 = StakingPool(payable(pool2));
       //console.log the pool address for fun  if(FrensPoolShareOld == 0){
       //console.log("pool2", pool2);
+      hoax(contOwner);
+      stakingPool2.setPubKey(pubkey, withdrawal_credentials2, signature, deposit_data_root);
 
     }
 
@@ -111,6 +116,7 @@ contract MiscTest is Test {
     }
 
     function testApprove() public {
+      
       startHoax(alice);
       uint i = 0;
       while( i < 255 ){ //255 is arbitrarily chosen, the point is to check a few different values.

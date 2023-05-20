@@ -80,15 +80,10 @@ contract StakingPool is IStakingPool, Ownable {
     //these are the ids which have deposits in this pool
     uint[] public idsInPool;
 
-    //this is set in the constructor and requires the validator public key and other validator info be set before deposits can be made
-    //also, if the validator is locked, once set, the pool owner cnnot change the validator pubkey and other info
-    bool public validatorLocked;
     //this is unused in this version of the system
     //it must be included to avoid requiring an update to FrensPoolShare when rageQuit is added
     bool public transferLocked;
-    //set as true once the validator info has been set for the pool
-    bool public validatorSet;
-
+    
     //validator public key for pool
     bytes public pubKey;
     //validator withdrawal credentials - must be set to pool address
@@ -160,7 +155,6 @@ contract StakingPool is IStakingPool, Ownable {
         require(address(this).balance >= 32 ether, "not enough eth");
         require(totalDeposits == 32 ether, "not enough deposits");
         require(currentState == PoolState.acceptingDeposits, "wrong state");
-        require(validatorSet, "validator not set");
 
         address depositContractAddress = frensStorage.getAddress(
             keccak256(
@@ -192,20 +186,13 @@ contract StakingPool is IStakingPool, Ownable {
                 keccak256(withdrawalCredFromAddr),
             "withdrawal credential mismatch"
         );
-        if (validatorLocked) {
-            require(
-                currentState == PoolState.awaitingValidatorInfo,
-                "wrong state"
-            );
-            assert(!validatorSet); //this should never fail
-            currentState = PoolState.acceptingDeposits;
-        }
-        require(currentState == PoolState.acceptingDeposits, "wrong state");
+        
+        require(currentState == PoolState.awaitingValidatorInfo, "wrong state");
         pubKey = _pubKey;
         withdrawal_credentials = _withdrawal_credentials;
         signature = _signature;
         deposit_data_root = _deposit_data_root;
-        validatorSet = true;
+        currentState = PoolState.acceptingDeposits;
     }
 
     ///@notice To withdraw funds previously deposited - ONLY works before the funds are staked. Use Claim to get rewards.

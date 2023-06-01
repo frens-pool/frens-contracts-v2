@@ -248,7 +248,7 @@ contract StakingPool is IStakingPool, Ownable {
             }
         } else exited = true;
         //get share for id
-        uint amount = _getShare(_id);
+        uint amount = getShare(_id);
         //claim
         frenPastClaim[_id] += amount;
         totalClaims += amount;
@@ -280,14 +280,14 @@ contract StakingPool is IStakingPool, Ownable {
         return idsInPool;
     }
 
-    ///@return the share of the validator rewards climable by `_id`
-    function getShare(
-        uint _id
-    ) public view correctPoolOnly(_id) returns (uint) {
-        return _getShare(_id);
-    }
+    // ///@return the share of the validator rewards climable by `_id`
+    // function getShare(
+    //     uint _id
+    // ) public view correctPoolOnly(_id) returns (uint) {
+    //     return _getShare(_id);
+    // }
 
-    function _getShare(uint _id) internal view returns (uint) {
+    function getShare(uint _id) public view returns (uint) {
         if (address(this).balance == 0) return 0;
         uint frenDep = depositForId[_id];
         uint frenPastClaims = frenPastClaim[_id];
@@ -304,7 +304,7 @@ contract StakingPool is IStakingPool, Ownable {
         if (currentState == PoolState.acceptingDeposits) {
             return 0;
         } else {
-            uint share = _getShare(_id);
+            uint share = getShare(_id);
             uint feePercent = frensStorage.getUint(
                 keccak256(abi.encodePacked("protocol.fee.percent"))
             );

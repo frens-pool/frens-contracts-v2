@@ -134,18 +134,37 @@ describe("Deploys", function () {
     await s.wait();
 
   });
+
+  it("Should deploy the Oracle", async function () {
+    const [owner] = await ethers.getSigners();
+    const FrensOracle = await ethers.getContractFactory("FrensOracle");
+    const frensOracle = await FrensOracle.deploy(
+      contracts.frensStorage.address,
+    );
+    contracts = Object.assign(contracts, { frensOracle });
+  });
+
   it("Should add StakingPoolFactory to the DEFAULT_ADMIN_ROLE role", async function () {
     await contracts.frensPoolShare.grantRole(
       ethers.constants.HashZero,
       contracts.stakingPoolFactory.address
     );
   });
+
+  it("Should call setPubKey on the ", async function () {
+    await contracts.frensPoolShare.grantRole(
+      ethers.constants.HashZero,
+      contracts.stakingPoolFactory.address
+    );
+  });
+
+
+
   it("Should deploy a StakingPool", async function () {
     const [owner] = await ethers.getSigners();
 
     const tx = await contracts.stakingPoolFactory.create(
-      owner.address,
-      false
+      owner.address
     );
     const receipt = await tx.wait();
     for (const event of receipt.events) {

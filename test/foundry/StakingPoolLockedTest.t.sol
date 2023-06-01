@@ -80,7 +80,7 @@ contract StakingPoolLockedTest is Test {
       //set contracts as deployed
      
       //create staking pool through proxy contract
-      (address pool) = stakingPoolFactory.create(contOwner, true/*, false, 0, 32000000000000000000*/);
+      (address pool) = stakingPoolFactory.create(contOwner /*, false, 0, 32000000000000000000*/);
       //connect to staking pool
       stakingPool = StakingPool(payable(pool));
       //console.log the pool address for fun  if(FrensPoolShareOld == 0){
@@ -219,7 +219,7 @@ contract StakingPoolLockedTest is Test {
         vm.expectRevert("use withdraw when not staked");
         stakingPool.claim(0);
         hoax(contOwner);
-        stakingPool.stake(pubkey, withdrawal_credentials, signature, deposit_data_root);
+        stakingPool.stake();
         uint aliceBalance = address(alice).balance;
         uint bobBalance = address(bob).balance;
         uint aliceShare = (address(stakingPool).balance) * aliceDeposit / 32000000000000000000;
@@ -262,7 +262,7 @@ contract StakingPoolLockedTest is Test {
         hoax(bob);
         stakingPool.depositToPool{value: bobDeposit}();
         startHoax(contOwner);
-        stakingPool.stake(pubkey, withdrawal_credentials, signature, deposit_data_root);
+        stakingPool.stake();
         payable(stakingPool).transfer(y);
         vm.expectRevert("must be greater than 100 wei to claim");
         stakingPool.claim(0);

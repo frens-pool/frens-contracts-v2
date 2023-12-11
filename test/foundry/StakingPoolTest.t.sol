@@ -333,7 +333,7 @@ contract StakingPoolTest is Test {
         assertApproxEqAbs(frensClaimBalance, bobShare, 2, "frensClaim balance pre-claim wrong");
         
         */
-        string memory state = stakingPool.getState();
+        stakingPool.getState();
         if(aliceShare == 1) aliceShare = 0;
         if(bobShare == 1) bobShare =0;
         

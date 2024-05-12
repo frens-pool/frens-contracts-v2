@@ -158,7 +158,6 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
         require(ssvNetwork != address(0), "FRENS contract error no SSV network contract address set");        
         IERC20(ssvTokenAddress).approve(ssvNetwork,type(uint256).max);
 
-        _transferOwnership(owner_);
     }
 
     ///@notice This allows a user to deposit funds to the pool, and recieve an NFT representing their share

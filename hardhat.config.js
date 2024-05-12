@@ -3,7 +3,7 @@ require("hardhat-interface-generator");
 require("dotenv/config");
 require("hardhat-gas-reporter");
 
-const defaultNetwork = "localhost";
+const defaultNetwork = "holesky";
 
 const mainnetGwei = 21;
 

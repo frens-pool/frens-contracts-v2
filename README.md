@@ -2,7 +2,7 @@
 
 ## Instalation
 
-Instal forge: https://book.getfoundry.sh/getting-started/installation
+Install forge: https://book.getfoundry.sh/getting-started/installation
 
 ## running unit tests
 

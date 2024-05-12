@@ -26,6 +26,7 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
     );
     event Withdraw(uint id, uint amount, address recipient);
     event Claim(uint id, uint amount, address recipient);
+    event SetArt(address newArt, address owner);
 
 
     modifier noZeroValueTxn() {
@@ -392,6 +393,7 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
         string memory newArt = newFrensArt.renderTokenById(0);
         require(bytes(newArt).length != 0, "invalid art contract");
         artForPool = newArtContract;
+        emit SetArt(address(newArtContract), msg.sender);
     }
 
     function callSSVNetwork(bytes memory data) external onlyOwner {
@@ -402,7 +404,8 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
 
     function transferToken(address tokenAddress, address to, uint amount) external onlyOwner {
         IERC20 token = IERC20(tokenAddress);
-        token.transfer(to, amount);
+        bool success = token.transfer(to, amount);
+        assert(success);
     }
 
     // to support receiving ETH by default

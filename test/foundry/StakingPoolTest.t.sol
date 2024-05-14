@@ -209,6 +209,7 @@ contract StakingPoolTest is Test {
         vm.expectRevert("wrong staking pool for id");
         stakingPool.addToDeposit{value: y}(69);
         //existing id should work fine
+        if(uint256(y) == 0) vm.expectRevert("must deposit ether");
         stakingPool.addToDeposit{value: y}(id);
         uint depAmt2 = stakingPool.depositForId(id);
         uint tot = uint(x) + uint(y);
@@ -240,6 +241,7 @@ contract StakingPoolTest is Test {
         vm.expectRevert("wrong staking pool for id");
         stakingPool2.addToDeposit{value: y}(id);
         //existing id should work fine (redundant with previous test)
+        if(uint256(y) == 0) vm.expectRevert("must deposit ether");
         stakingPool.addToDeposit{value: y}(id);
         uint depAmt2 = stakingPool.depositForId(id);
         uint tot = uint(x) + uint(y);
@@ -252,7 +254,11 @@ contract StakingPoolTest is Test {
         startHoax(alice);
         stakingPool.depositToPool{value: x}();
         uint id = frensPoolShare.tokenOfOwnerByIndex(alice, 0);
-        vm.expectRevert("total deposits cannot be more than 32 Eth");
+        if(uint256(y) == 0) {
+          vm.expectRevert("must deposit ether");
+        } else {
+          vm.expectRevert("total deposits cannot be more than 32 Eth");
+        }
         stakingPool.addToDeposit{value: y}(id);
       }
     }

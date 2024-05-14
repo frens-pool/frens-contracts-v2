@@ -182,7 +182,7 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
 
     ///@notice allows a user to add funds to an existing NFT ID
     ///@dev recieves funds and increases deposit for a FrensPoolShare ID
-    function addToDeposit(uint _id) external payable mustBeAccepting maxTotDep correctPoolOnly(_id){
+    function addToDeposit(uint _id) external payable mustBeAccepting maxTotDep correctPoolOnly(_id) noZeroValueTxn(){
         require(frensPoolShare.exists(_id), "id does not exist"); //id must exist
         depositForId[_id] += msg.value;
         totalDeposits += msg.value;
@@ -276,7 +276,7 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
 
     ///@notice To withdraw funds previously deposited - ONLY works before the funds are staked. Use Claim to get rewards.
     ///@dev allows user to withdraw funds if they have not yet been deposited to the deposit contract with the Stake method
-    function withdraw(uint _id, uint _amount) external mustBeAccepting {
+    function withdraw(uint _id, uint _amount) external mustBeAccepting correctPoolOnly(_id){
         require(msg.sender == frensPoolShare.ownerOf(_id), "not the owner");
         require(depositForId[_id] >= _amount, "not enough deposited");
         depositForId[_id] -= _amount;

@@ -104,7 +104,6 @@ contract StakingPoolLockedTest is Test {
           address(stakingPoolImplementation)
       );
       //set contracts as deployed
-     
       //create staking pool through proxy contract
       (address pool) = stakingPoolFactory.create(contOwner, true/*, false, 0, 32000000000000000000*/);
       //connect to staking pool
@@ -159,6 +158,7 @@ contract StakingPoolLockedTest is Test {
         assertTrue(id == 0, "first id is 0");
         uint depAmt = stakingPool.depositForId(id);
         assertEq(x, depAmt);
+        if(uint256(y) == 0) vm.expectRevert("must deposit ether");
         stakingPool.addToDeposit{value: y}(id);
         uint depAmt2 = stakingPool.depositForId(id);
         uint tot = uint(x) + uint(y);

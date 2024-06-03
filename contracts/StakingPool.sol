@@ -157,7 +157,8 @@ contract StakingPool is IStakingPool, OwnableUpgradeable{
         require(ssvTokenAddress != address(0), "FRENS contract error no SSV token contract set");        
         address ssvNetwork = frensStorage.getAddress(keccak256(abi.encodePacked("external.contract.address", "SSVNetwork")));
         require(ssvNetwork != address(0), "FRENS contract error no SSV network contract address set");        
-        IERC20(ssvTokenAddress).approve(ssvNetwork,type(uint256).max);
+        bool success = IERC20(ssvTokenAddress).approve(ssvNetwork,type(uint256).max);
+        assert(success);
 
     }
 
